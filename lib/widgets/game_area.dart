@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flame/game.dart';
 import '../game/snake_game.dart';
+import '../game/logic/snake_logic.dart';
 import '../ui/app_theme.dart';
 
 class GameArea extends StatelessWidget {
@@ -11,11 +12,13 @@ class GameArea extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Offset? dragStart;
+    bool gestureUsed = false;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final borderRadius = BorderRadius.circular(AppTheme.cardRadius);
         final size = constraints.biggest;
-        // Imagen de fondo siempre ocupa todo el área
         final backgroundImage = Container(
           width: size.width,
           height: size.height,
@@ -27,31 +30,63 @@ class GameArea extends StatelessWidget {
             ),
           ),
         );
+        Widget gameContent = ClipRRect(
+          borderRadius: borderRadius,
+          child: Container(
+            color: Color.fromRGBO(44, 44, 64, 0.7),
+            child: GameWidget(
+              game: game,
+              overlayBuilderMap: overlayBuilderMap,
+              initialActiveOverlays: initialActiveOverlays,
+            ),
+          ),
+        );
+        // Envolver con GestureDetector para detectar swipes
+        gameContent = GestureDetector(
+          onPanStart: (details) {
+            dragStart = details.localPosition;
+            gestureUsed = false;
+          },
+          onPanUpdate: (details) {
+            if (dragStart != null && !gestureUsed) {
+              final delta = details.localPosition - dragStart!;
+              if (delta.distance < 20) return; // Ignorar movimientos pequeños
+              final dx = delta.dx.abs();
+              final dy = delta.dy.abs();
+              if (dx > dy) {
+                if (delta.dx > 0) {
+                  game.setDirection(Direction.right);
+                } else {
+                  game.setDirection(Direction.left);
+                }
+              } else {
+                if (delta.dy > 0) {
+                  game.setDirection(Direction.down);
+                } else {
+                  game.setDirection(Direction.up);
+                }
+              }
+              gestureUsed = true;
+            }
+          },
+          onPanEnd: (details) {
+            dragStart = null;
+            gestureUsed = false;
+          },
+          child: gameContent,
+        );
         if (size.width > size.height) {
-          // Horizontal: usar todo el ancho y alto disponible
           return Stack(
             children: [
               backgroundImage,
-              Container(
+              SizedBox(
                 width: size.width,
                 height: size.height,
-              
-                child: ClipRRect(
-                  borderRadius: borderRadius,
-                  child: Container(
-                    color: Color.fromRGBO(44, 44, 64, 0.7), // AppTheme.boardColor.withOpacity(0.7)
-                    child: GameWidget(
-                      game: game,
-                      overlayBuilderMap: overlayBuilderMap,
-                      initialActiveOverlays: initialActiveOverlays,
-                    ),
-                  ),
-                ),
+                child: gameContent,
               ),
             ],
           );
         } else {
-          // Vertical: cuadrado centrado
           final minSide = size.width < size.height ? size.width : size.height;
           return Stack(
             children: [
@@ -65,17 +100,7 @@ class GameArea extends StatelessWidget {
                     border: Border.all(color: AppTheme.gameOverPrimary, width: 4),
                     borderRadius: borderRadius,
                   ),
-                  child: ClipRRect(
-                    borderRadius: borderRadius,
-                    child: Container(
-                      color: Color.fromRGBO(44, 44, 64, 0.7), // AppTheme.boardColor.withOpacity(0.7)
-                      child: GameWidget(
-                        game: game,
-                        overlayBuilderMap: overlayBuilderMap,
-                        initialActiveOverlays: initialActiveOverlays,
-                      ),
-                    ),
-                  ),
+                  child: gameContent,
                 ),
               ),
             ],

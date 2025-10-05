@@ -46,7 +46,9 @@ class SnakeLogic {
     final head = snake.first;
     int dx = food.x - head.x;
     int dy = food.y - head.y;
-    if (dx.abs() + dy.abs() == 1) {
+    int manhattan = dx.abs() + dy.abs();
+    if (manhattan > 5) return; // Solo atraer si está a 5 cuadros o menos
+    if (manhattan == 1) {
       // Si la fruta está justo al lado, comer automáticamente
       food = head;
       applesEaten += 1;
@@ -54,7 +56,7 @@ class SnakeLogic {
     } else if (food == head) {
       applesEaten += 1;
       generateFood();
-    } else if (dx.abs() + dy.abs() > 1) {
+    } else if (manhattan > 1) {
       // Mover la fruta un paso hacia la cabeza
       int stepX = dx == 0 ? 0 : (dx > 0 ? -1 : 1);
       int stepY = dy == 0 ? 0 : (dy > 0 ? -1 : 1);

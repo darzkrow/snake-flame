@@ -3,6 +3,7 @@ import 'package:flame/game.dart';
 import 'package:flame/input.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 
 import 'score/score_manager.dart';
@@ -84,14 +85,14 @@ class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
   }
 
   @override
-  void onGameResize(Vector2 canvasSize) {
-    super.onGameResize(canvasSize);
+  void onGameResize(Vector2 size) {
+    super.onGameResize(size);
     const int minCells = 20;
-    final double cellWidth = canvasSize.x / minCells;
-    final double cellHeight = canvasSize.y / minCells;
+    final double cellWidth = size.x / minCells;
+    final double cellHeight = size.y / minCells;
     cellSize = cellWidth < cellHeight ? cellWidth : cellHeight;
-    columns = (canvasSize.x / cellSize!).floor();
-    rows = (canvasSize.y / cellSize!).floor();
+    columns = (size.x / cellSize!).floor();
+    rows = (size.y / cellSize!).floor();
     logic.rows = rows;
     logic.columns = columns;
   }
@@ -153,39 +154,54 @@ class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
     // Mostrar icono de efecto especial activo
     if (logic.activeEffect != null && logic.specialEffectEnd != null && DateTime.now().isBefore(logic.specialEffectEnd!)) {
       Color color = Colors.white;
-      String label = '';
+  // iconData eliminado, ya no se usa
       switch (logic.activeEffect!) {
         case SpecialEffectType.antiCollision:
           color = Colors.blueAccent;
-          label = 'A';
           break;
         case SpecialEffectType.turbo:
           color = Colors.purpleAccent;
-          label = 'T';
           break;
         case SpecialEffectType.doublePoints:
           color = Colors.yellowAccent;
-          label = '2x';
           break;
         case SpecialEffectType.reverseControls:
           color = Colors.redAccent;
-          label = 'R';
           break;
         case SpecialEffectType.magnet:
           color = Colors.cyan;
-          label = 'M';
           break;
         case SpecialEffectType.fruitRain:
           color = Colors.deepOrangeAccent;
-          label = 'F';
           break;
       }
       final double iconSize = 32;
       final Offset iconPos = Offset((columns * cellSize!) - iconSize - 8, 8);
-  canvas.drawCircle(iconPos + Offset(iconSize/2, iconSize/2), iconSize/2, Paint()..color = Color.fromRGBO(color.red, color.green, color.blue, 0.85));
+      var r = (color.r * 255.0);
+      var d = (color.g * 255.0);
+      var e = (color.b * 255.0);
+      canvas.drawCircle(
+        iconPos + Offset(iconSize / 2, iconSize / 2),
+        iconSize / 2,
+        Paint()
+          ..color = Color.fromRGBO(
+            r.round() & 0xFF,
+            d.round() & 0xFF,
+            e.round() & 0xFF,
+            0.85,
+          ),
+      );
+      // No es posible renderizar widgets (Icon) directamente en el canvas de Flame.
+      // Si se desea un icono real, debe usarse un asset o dibujar un símbolo simple aquí.
+      // Por ahora, solo se muestra el círculo de color y se puede dejar la letra como fallback.
       final textPainter = TextPainter(
         text: TextSpan(
-          text: label,
+          text: logic.activeEffect == SpecialEffectType.antiCollision ? 'A' :
+                logic.activeEffect == SpecialEffectType.turbo ? 'T' :
+                logic.activeEffect == SpecialEffectType.doublePoints ? '2x' :
+                logic.activeEffect == SpecialEffectType.reverseControls ? 'R' :
+                logic.activeEffect == SpecialEffectType.magnet ? 'M' :
+                logic.activeEffect == SpecialEffectType.fruitRain ? 'F' : '',
           style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
         ),
         textDirection: TextDirection.ltr,
