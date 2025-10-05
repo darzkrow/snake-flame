@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'fruit.dart';
 
 enum SpecialEffectType {
   antiCollision,
@@ -9,18 +10,14 @@ enum SpecialEffectType {
   fruitRain,
 }
 
-class SpecialFruit {
-  final Point<int> position;
+class SpecialFruit extends Fruit {
   final SpecialEffectType effectType;
   final DateTime spawnTime;
-  final Duration duration;
-
   SpecialFruit({
-    required this.position,
+    required Point<int> position,
     required this.effectType,
     required this.spawnTime,
-    this.duration = const Duration(seconds: 10),
-  });
+  }) : super(position);
 
-  bool isExpired(DateTime now) => now.difference(spawnTime) > duration;
+  bool isExpired(DateTime now) => now.difference(spawnTime).inSeconds > 10;
 }

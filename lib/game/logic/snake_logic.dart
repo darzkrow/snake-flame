@@ -1,5 +1,10 @@
 import 'dart:math';
-import 'special_fruit.dart';
+
+import '../food/normal_fruit.dart';
+import '../food/orange_apple.dart';
+import '../food/special_fruit.dart';
+import '../food/extra_fruit.dart';
+import '../food/golden_fruit.dart';
 import '../food/bonus_food.dart';
 
 enum Direction { up, down, left, right }
@@ -9,16 +14,16 @@ class SnakeLogic {
   List<Point<int>> snake;
   Direction direction;
   int applesEaten;
-  Point<int>? orangeApple;
+  OrangeApple? orangeApple;
   int rows;
   int columns;
-  Point<int> food;
+  NormalFruit food;
   List<Point<int>> obstacles;
   SpecialFruit? specialFruit;
   DateTime? specialEffectEnd;
   SpecialEffectType? activeEffect;
-  List<Point<int>> extraFruits = [];
-  List<Point<int>> goldenFruits = [];
+  List<ExtraFruit> extraFruits = [];
+  List<GoldenFruit> goldenFruits = [];
 
   SnakeLogic({
     required this.snake,
@@ -44,25 +49,25 @@ class SnakeLogic {
   void updateMagnet() {
     if (!hasMagnet || snake.isEmpty) return;
     final head = snake.first;
-    int dx = food.x - head.x;
-    int dy = food.y - head.y;
+    int dx = food.position.x - head.x;
+    int dy = food.position.y - head.y;
     int manhattan = dx.abs() + dy.abs();
     if (manhattan > 5) return; // Solo atraer si está a 5 cuadros o menos
     if (manhattan == 1) {
       // Si la fruta está justo al lado, comer automáticamente
-      food = head;
+      food = NormalFruit(head);
       applesEaten += 1;
       generateFood();
-    } else if (food == head) {
+    } else if (food.position == head) {
       applesEaten += 1;
       generateFood();
     } else if (manhattan > 1) {
       // Mover la fruta un paso hacia la cabeza
       int stepX = dx == 0 ? 0 : (dx > 0 ? -1 : 1);
       int stepY = dy == 0 ? 0 : (dy > 0 ? -1 : 1);
-      Point<int> newPos = Point(food.x + stepX, food.y + stepY);
+      Point<int> newPos = Point(food.position.x + stepX, food.position.y + stepY);
       if (!snake.contains(newPos) && !obstacles.contains(newPos)) {
-        food = newPos;
+        food = NormalFruit(newPos);
       }
     }
   }
@@ -99,7 +104,7 @@ class SnakeLogic {
       Point<int> pos;
       do {
         pos = Point(Random().nextInt(columns), Random().nextInt(rows));
-      } while (snake.contains(pos) || obstacles.contains(pos) || pos == food || (orangeApple != null && pos == orangeApple));
+  } while (snake.contains(pos) || obstacles.contains(pos) || pos == food.position || (orangeApple != null && pos == orangeApple!.position));
       // Elegir efecto aleatorio
       final effects = SpecialEffectType.values;
       final effect = effects[Random().nextInt(effects.length)];
@@ -118,7 +123,7 @@ class SnakeLogic {
   }
 
   void eatSpecialFruitIfNeeded(Point<int> head) {
-    if (specialFruit != null && head == specialFruit!.position) {
+  if (specialFruit != null && head == specialFruit!.position) {
       // Activar efecto especial
       activeEffect = specialFruit!.effectType;
       specialEffectEnd = DateTime.now().add(const Duration(seconds: 10));
@@ -131,16 +136,16 @@ class SnakeLogic {
           // 20 frutas normales
           while (extraFruits.length < 20) {
             final p = Point(rand.nextInt(columns), rand.nextInt(rows));
-            if (!snake.contains(p) && !obstacles.contains(p) && p != food && (orangeApple == null || p != orangeApple)) {
-              extraFruits.add(p);
+            if (!snake.contains(p) && !obstacles.contains(p) && p != food.position && (orangeApple == null || p != orangeApple!.position)) {
+              extraFruits.add(ExtraFruit(p));
             }
           }
         } else {
           // 5 doradas
           while (goldenFruits.length < 5) {
             final p = Point(rand.nextInt(columns), rand.nextInt(rows));
-            if (!snake.contains(p) && !obstacles.contains(p) && p != food && (orangeApple == null || p != orangeApple)) {
-              goldenFruits.add(p);
+            if (!snake.contains(p) && !obstacles.contains(p) && p != food.position && (orangeApple == null || p != orangeApple!.position)) {
+              goldenFruits.add(GoldenFruit(p));
             }
           }
         }
@@ -176,16 +181,6 @@ class SnakeLogic {
   }
 
   void grow() {
-    // Si come una fruta extra
-    if (extraFruits.isNotEmpty && getNextHead() == extraFruits.first) {
-      applesEaten += 1;
-      extraFruits.removeAt(0);
-    }
-    // Si come una dorada
-    if (goldenFruits.isNotEmpty && getNextHead() == goldenFruits.first) {
-      applesEaten += 5;
-      goldenFruits.removeAt(0);
-    }
     snake.insert(0, getNextHead());
   }
 
@@ -194,7 +189,7 @@ class SnakeLogic {
   }
 
   void generateFood() {
-    food = _generateSafeFood();
+  food = NormalFruit(_generateSafeFood());
   }
 
   Point<int> _generateSafeFood() {
@@ -202,11 +197,12 @@ class SnakeLogic {
     Point<int> pos;
     do {
       pos = Point(random.nextInt(columns), random.nextInt(rows));
-    } while (snake.contains(pos) || obstacles.contains(pos) || (orangeApple != null && pos == orangeApple));
+    } while (snake.contains(pos) || obstacles.contains(pos) || (orangeApple != null && pos == orangeApple!.position));
     return pos;
   }
 
   void generateOrangeApple() {
-    orangeApple = BonusFood.generate(columns, rows, snake, food);
+  final pos = BonusFood.generate(columns, rows, snake, food.position);
+  orangeApple = OrangeApple(pos);
   }
 }

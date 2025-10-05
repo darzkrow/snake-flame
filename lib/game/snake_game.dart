@@ -8,7 +8,8 @@ import 'package:flutter/material.dart';
 
 import 'score/score_manager.dart';
 import 'logic/snake_logic.dart';
-import 'logic/special_fruit.dart';
+import 'food/normal_fruit.dart';
+import 'food/special_fruit.dart';
 import 'logic/auto_snake_bot.dart';
 import 'stage/stage_manager.dart';
 
@@ -71,7 +72,7 @@ class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
       orangeApple: null,
       rows: rows,
       columns: columns,
-      food: Point<int>(5, 5),
+      food: NormalFruit(Point<int>(5, 5)),
       obstacles: [],
     );
     bot = AutoSnakeBot(logic: logic, columns: columns, rows: rows);
@@ -134,9 +135,9 @@ class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
   // Dibujar frutas extra (lluvia)
     if (logic.extraFruits.isNotEmpty) {
       final paintExtra = Paint()..color = Colors.lightGreenAccent;
-      for (final p in logic.extraFruits) {
+      for (final fruit in logic.extraFruits) {
         canvas.drawRect(
-          Rect.fromLTWH(p.x * cellSize!, p.y * cellSize!, cellSize!, cellSize!),
+          Rect.fromLTWH(fruit.position.x * cellSize!, fruit.position.y * cellSize!, cellSize!, cellSize!),
           paintExtra,
         );
       }
@@ -144,9 +145,9 @@ class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
     // Dibujar frutas doradas (lluvia)
     if (logic.goldenFruits.isNotEmpty) {
       final paintGold = Paint()..color = Colors.amberAccent;
-      for (final p in logic.goldenFruits) {
+      for (final fruit in logic.goldenFruits) {
         canvas.drawOval(
-          Rect.fromLTWH(p.x * cellSize!, p.y * cellSize!, cellSize!, cellSize!),
+          Rect.fromLTWH(fruit.position.x * cellSize!, fruit.position.y * cellSize!, cellSize!, cellSize!),
           paintGold,
         );
       }
@@ -154,7 +155,6 @@ class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
     // Mostrar icono de efecto especial activo
     if (logic.activeEffect != null && logic.specialEffectEnd != null && DateTime.now().isBefore(logic.specialEffectEnd!)) {
       Color color = Colors.white;
-  // iconData eliminado, ya no se usa
       switch (logic.activeEffect!) {
         case SpecialEffectType.antiCollision:
           color = Colors.blueAccent;
@@ -175,25 +175,32 @@ class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
           color = Colors.deepOrangeAccent;
           break;
       }
-      final double iconSize = 32;
-      final Offset iconPos = Offset((columns * cellSize!) - iconSize - 8, 8);
+      final double iconSize = 38;
+      final Offset iconPos = Offset((columns * cellSize!) - iconSize - 16, 16);
       var r = (color.r * 255.0);
       var d = (color.g * 255.0);
       var e = (color.b * 255.0);
-      canvas.drawCircle(
-        iconPos + Offset(iconSize / 2, iconSize / 2),
-        iconSize / 2,
-        Paint()
-          ..color = Color.fromRGBO(
-            r.round() & 0xFF,
-            d.round() & 0xFF,
-            e.round() & 0xFF,
-            0.85,
-          ),
-      );
-      // No es posible renderizar widgets (Icon) directamente en el canvas de Flame.
-      // Si se desea un icono real, debe usarse un asset o dibujar un símbolo simple aquí.
-      // Por ahora, solo se muestra el círculo de color y se puede dejar la letra como fallback.
+      // Animación de aparición (fade/scale simple)
+      double t = 1.0;
+      if (logic.specialEffectEnd != null) {
+        final total = 10.0;
+        final restante = logic.specialEffectEnd!.difference(DateTime.now()).inMilliseconds / 1000.0;
+        t = restante > total - 0.3 ? (1 - ((total - restante) / 0.3)).clamp(0.0, 1.0) : 1.0;
+      }
+      final Offset center = iconPos + Offset(iconSize / 2, iconSize / 2);
+      final double scale = 0.8 + 0.2 * t;
+  // alpha eliminado, no se usa
+      // Sombra
+  canvas.drawCircle(center + Offset(2, 4), iconSize / 2 * scale, Paint()..color = Colors.black.withAlpha((0.25 * 255).toInt()));
+      // Círculo principal con borde
+      canvas.drawCircle(center, iconSize / 2 * scale, Paint()
+        ..color = Color.fromRGBO(r.round() & 0xFF, d.round() & 0xFF, e.round() & 0xFF, 0.85)
+        ..style = PaintingStyle.fill);
+      canvas.drawCircle(center, iconSize / 2 * scale, Paint()
+        ..color = Colors.white.withAlpha((0.85 * 255).toInt())
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3);
+      // Letra o símbolo
       final textPainter = TextPainter(
         text: TextSpan(
           text: logic.activeEffect == SpecialEffectType.antiCollision ? 'A' :
@@ -202,11 +209,11 @@ class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
                 logic.activeEffect == SpecialEffectType.reverseControls ? 'R' :
                 logic.activeEffect == SpecialEffectType.magnet ? 'M' :
                 logic.activeEffect == SpecialEffectType.fruitRain ? 'F' : '',
-          style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Colors.black.withAlpha((t * 255).toInt()), fontSize: 22 * scale, fontWeight: FontWeight.bold, shadows: [Shadow(blurRadius: 4, color: Colors.white, offset: Offset(0,0))]),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      textPainter.paint(canvas, iconPos + Offset((iconSize - textPainter.width)/2, (iconSize - textPainter.height)/2));
+      textPainter.paint(canvas, center - Offset(textPainter.width/2, textPainter.height/2));
     }
     if (cellSize == null) return;
     canvas.drawRect(
@@ -231,13 +238,13 @@ class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
     }
     // Manzana normal
     canvas.drawRect(
-      Rect.fromLTWH(logic.food.x * cellSize!, logic.food.y * cellSize!, cellSize!, cellSize!),
+      Rect.fromLTWH(logic.food.position.x * cellSize!, logic.food.position.y * cellSize!, cellSize!, cellSize!),
       Paint()..color = Colors.red,
     );
     // Manzana naranja
     if (logic.orangeApple != null) {
       canvas.drawRect(
-        Rect.fromLTWH(logic.orangeApple!.x * cellSize!, logic.orangeApple!.y * cellSize!, cellSize!, cellSize!),
+        Rect.fromLTWH(logic.orangeApple!.position.x * cellSize!, logic.orangeApple!.position.y * cellSize!, cellSize!, cellSize!),
         Paint()..color = Colors.orange,
       );
     }
@@ -301,8 +308,24 @@ class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
       return;
     }
     logic.snake.insert(0, newHead);
-    // Comer manzana normal
-    if (newHead == logic.food) {
+    // Comer fruta especial (lluvia)
+  if (logic.extraFruits.isNotEmpty && newHead == logic.extraFruits.first.position) {
+      int scoreToAdd = 3;
+      if (isAccelerating && scoreManager.score > 0) {
+        scoreManager.scoreNotifier.value -= 1;
+      }
+      scoreManager.increment(scoreToAdd);
+      logic.applesEaten += 1;
+  logic.extraFruits.removeAt(0);
+  } else if (logic.goldenFruits.isNotEmpty && newHead == logic.goldenFruits.first.position) {
+      int scoreToAdd = 7;
+      if (isAccelerating && scoreManager.score > 0) {
+        scoreManager.scoreNotifier.value -= 1;
+      }
+      scoreManager.increment(scoreToAdd);
+      logic.applesEaten += 5;
+  logic.goldenFruits.removeAt(0);
+  } else if (newHead == logic.food.position) {
       int scoreToAdd = 1;
       if (isAccelerating && scoreManager.score > 0) {
         // Penalización: quemar 1 punto por moverse rápido
@@ -319,7 +342,7 @@ class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
       if (logic.applesEaten % 5 == 0) {
         logic.generateOrangeApple();
       }
-    } else if (logic.orangeApple != null && newHead == logic.orangeApple) {
+  } else if (logic.orangeApple != null && newHead == logic.orangeApple!.position) {
       int scoreToAdd = 10;
       if (isAccelerating && scoreManager.score > 0) {
         scoreManager.scoreNotifier.value -= 1;

@@ -11,12 +11,12 @@ class AutoSnakeBot {
   Direction? getNextDirection() {
     final head = logic.snake.first;
     // Construir lista de objetivos prioritarios
-    final List<Point<int>> targets = [];
-    if (logic.specialFruit != null) targets.add(logic.specialFruit!.position);
-    if (logic.goldenFruits.isNotEmpty) targets.addAll(logic.goldenFruits);
-    if (logic.extraFruits.isNotEmpty) targets.addAll(logic.extraFruits);
-    if (logic.orangeApple != null) targets.add(logic.orangeApple!);
-    targets.add(logic.food);
+  final List<Point<int>> targets = [];
+  if (logic.specialFruit != null) targets.add(logic.specialFruit!.position);
+  if (logic.goldenFruits.isNotEmpty) targets.addAll(logic.goldenFruits.map((f) => f.position));
+  if (logic.extraFruits.isNotEmpty) targets.addAll(logic.extraFruits.map((f) => f.position));
+  if (logic.orangeApple != null) targets.add(logic.orangeApple!.position);
+  targets.add(logic.food.position);
 
     // Buscar el objetivo más cercano
     Point<int> closest = targets.first;
@@ -40,7 +40,19 @@ class AutoSnakeBot {
       final next = _nextPoint(head, dir);
       return !_isCollision(next);
     }).toList();
-    if (safeDirs.isEmpty) return null;
+    if (safeDirs.isEmpty) {
+      // Si no hay direcciones seguras, intentar moverse a cualquier dirección libre (aunque no sea óptima)
+      for (final dir in directions) {
+        if (!_isReverse(dir)) {
+          final next = _nextPoint(head, dir);
+          if (!_isCollision(next)) {
+            return dir;
+          }
+        }
+      }
+      // Si no hay ninguna libre, quedarse quieto (null)
+      return null;
+    }
 
     // Flood fill para cada dirección segura
     int maxFree = -1;
