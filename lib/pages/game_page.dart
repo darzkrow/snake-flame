@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../game/snake_game.dart';
-import '../game/logic/snake_logic.dart';
-import '../widgets/arrow_button.dart';
-// import '../widgets/wasd_button.dart';
-import 'package:flame/game.dart';
-import 'dart:ui';
+import '../widgets/game_area.dart';
+import 'game/game_over_overlay.dart';
+import 'game/game_controls.dart';
+
+
 
 
 class GamePage extends StatefulWidget {
@@ -52,140 +52,28 @@ class _GamePageState extends State<GamePage> {
               ),
             ),
           ),
-          // Juego y overlays (debe estar debajo del puntaje)
-          GameWidget(
+          // Área de juego responsiva
+          GameArea(
             game: game,
             overlayBuilderMap: {
-              'GameOver': (context, gameInstance) {
-                final snakeGame = gameInstance as SnakeGame;
-                return Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(36),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.deepPurple.shade900, Colors.black, Colors.deepPurple.shade700],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(32),
-                      border: Border.all(color: Colors.amber, width: 4),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.7),
-                          blurRadius: 24,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.sentiment_very_dissatisfied, color: Colors.redAccent, size: 60),
-                        const SizedBox(height: 12),
-                        const Text(
-                          '¡Game Over!',
-                          style: TextStyle(
-                            fontFamily: 'Bit32',
-                            fontSize: 48,
-                            color: Colors.redAccent,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 2,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        ValueListenableBuilder<int>(
-                          valueListenable: snakeGame.scoreManager.scoreNotifier,
-                          builder: (context, score, _) => Column(
-                            children: [
-                              Text(
-                                'Puntaje',
-                                style: TextStyle(
-                                  fontFamily: 'Bit32',
-                                  fontSize: 22,
-                                  color: Colors.white.withOpacity(0.8),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                '$score',
-                                style: const TextStyle(
-                                  fontFamily: 'Bit32',
-                                  fontSize: 40,
-                                  color: Colors.yellow,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        ValueListenableBuilder<int>(
-                          valueListenable: snakeGame.scoreManager.bestScoreNotifier,
-                          builder: (context, best, _) => Column(
-                            children: [
-                              Text(
-                                'Mejor Puntaje',
-                                style: TextStyle(
-                                  fontFamily: 'Bit32',
-                                  fontSize: 18,
-                                  color: Colors.amber.shade200,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                '$best',
-                                style: const TextStyle(
-                                  fontFamily: 'Bit32',
-                                  fontSize: 28,
-                                  color: Colors.amber,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 28),
-                        Text(
-                          '¡Intenta superar tu mejor puntaje!',
-                          style: TextStyle(
-                            fontFamily: 'Bit32',
-                            fontSize: 16,
-                            color: Colors.white.withOpacity(0.7),
-                          ),
-                        ),
-                        const SizedBox(height: 36),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green.shade700,
-                            padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 22),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                            elevation: 8,
-                          ),
-                          onPressed: onRestart,
-                          icon: const Icon(Icons.refresh, color: Colors.white, size: 32),
-                          label: const Text('Jugar de nuevo', style: TextStyle(fontSize: 28, color: Colors.white, fontFamily: 'Bit32', fontWeight: FontWeight.bold)),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
+              'GameOver': (context, gameInstance) => GameOverOverlay(
+                snakeGame: gameInstance as SnakeGame,
+                onRestart: onRestart,
+              ),
             },
             initialActiveOverlays: const [],
           ),
-          // Contador de puntaje grande y botón de reinicio (siempre encima)
+          // Puntaje y botón de reinicio
           SafeArea(
             child: Stack(
               children: [
-                // Puntaje grande centrado arriba
                 Align(
                   alignment: Alignment.topCenter,
                   child: Container(
                     margin: const EdgeInsets.only(top: 12),
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.purple.withOpacity(0.8), // Color llamativo para depuración
+                      color: Colors.purple.withOpacity(0.8),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: Colors.yellow, width: 3),
                     ),
@@ -227,7 +115,6 @@ class _GamePageState extends State<GamePage> {
                     ),
                   ),
                 ),
-                // Botón de reinicio arriba derecha
                 Align(
                   alignment: Alignment.topRight,
                   child: Container(
@@ -246,34 +133,14 @@ class _GamePageState extends State<GamePage> {
               ],
             ),
           ),
-          // Controles en pantalla: solo flechas, pero permite teclado WASD y flechas
-          Positioned(
-            left: 30,
-            bottom: 60,
-            child: Column(
-              children: [
-                ArrowButton(
-                  icon: Icons.keyboard_arrow_up,
-                  onTap: () => game.setDirection(Direction.up),
-                ),
-                Row(
-                  children: [
-                    ArrowButton(
-                      icon: Icons.keyboard_arrow_left,
-                      onTap: () => game.setDirection(Direction.left),
-                    ),
-                    const SizedBox(width: 48),
-                    ArrowButton(
-                      icon: Icons.keyboard_arrow_right,
-                      onTap: () => game.setDirection(Direction.right),
-                    ),
-                  ],
-                ),
-                ArrowButton(
-                  icon: Icons.keyboard_arrow_down,
-                  onTap: () => game.setDirection(Direction.down),
-                ),
-              ],
+          // Controles responsivos SIEMPRE visibles abajo
+          Align(
+            alignment: Alignment.bottomLeft,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 16, bottom: 8),
+                child: GameControls(game: game),
+              ),
             ),
           ),
         ],
