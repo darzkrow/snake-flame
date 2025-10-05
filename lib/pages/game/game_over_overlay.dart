@@ -25,7 +25,7 @@ class GameOverOverlay extends StatelessWidget {
               border: Border.all(color: Colors.amber, width: 3),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.5),
+                  color: Color.fromRGBO(0, 0, 0, 0.5),
                   blurRadius: 18,
                   offset: const Offset(0, 6),
                 ),

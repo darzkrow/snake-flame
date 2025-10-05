@@ -13,7 +13,7 @@ class WASDButton extends StatelessWidget {
         onTap: onTap,
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
+            color: Color.fromRGBO(255, 255, 255, 0.2),
             shape: BoxShape.circle,
           ),
           width: 48,

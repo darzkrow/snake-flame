@@ -79,10 +79,10 @@ class AppTheme {
     ],
   );
 
-  static TextStyle gameOverScoreTitleStyle = TextStyle(
+  static const TextStyle gameOverScoreTitleStyle = TextStyle(
     fontFamily: 'Bit32',
     fontSize: 24,
-    color: primaryText.withOpacity(0.9),
+    color: Color.fromRGBO(255, 255, 255, 0.9),
     fontWeight: FontWeight.bold,
   );
 

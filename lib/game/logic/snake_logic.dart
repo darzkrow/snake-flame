@@ -78,7 +78,6 @@ class SnakeLogic {
       case Direction.right:
         return Point(head.x + 1, head.y);
     }
-    throw Exception('Dirección inválida');
   }
 
   bool get hasAntiCollision =>

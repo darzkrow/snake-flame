@@ -3,7 +3,7 @@ import 'package:flame/game.dart';
 import 'package:flame/input.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
-import 'dart:ui';
+
 
 import 'score/score_manager.dart';
 import 'logic/snake_logic.dart';
@@ -182,7 +182,7 @@ class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
       }
       final double iconSize = 32;
       final Offset iconPos = Offset((columns * cellSize!) - iconSize - 8, 8);
-      canvas.drawCircle(iconPos + Offset(iconSize/2, iconSize/2), iconSize/2, Paint()..color = color.withOpacity(0.85));
+  canvas.drawCircle(iconPos + Offset(iconSize/2, iconSize/2), iconSize/2, Paint()..color = Color.fromRGBO(color.red, color.green, color.blue, 0.85));
       final textPainter = TextPainter(
         text: TextSpan(
           text: label,
@@ -228,7 +228,7 @@ class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
     // Dibujar fruta especial
     if (logic.specialFruit != null) {
       final paintSpecial = Paint()
-        ..color = Colors.blueAccent.withOpacity(0.8)
+        ..color = Color.fromRGBO(124, 77, 255, 0.8) // Colors.blueAccent.withOpacity(0.8)
         ..style = PaintingStyle.fill;
       canvas.drawOval(
         Rect.fromLTWH(

@@ -18,11 +18,11 @@ class GameControls extends StatelessWidget {
             onTapCancel: () => game.setAccelerating(false),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.7),
+                color: Color.fromRGBO(158, 158, 158, 0.7), // Colors.grey.withOpacity(0.7)
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
+                    color: Color.fromRGBO(0, 0, 0, 0.15),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),

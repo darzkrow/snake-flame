@@ -39,7 +39,7 @@ class GameArea extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: borderRadius,
                   child: Container(
-                    color: AppTheme.boardColor.withOpacity(0.7),
+                    color: Color.fromRGBO(44, 44, 64, 0.7), // AppTheme.boardColor.withOpacity(0.7)
                     child: GameWidget(
                       game: game,
                       overlayBuilderMap: overlayBuilderMap,
@@ -68,7 +68,7 @@ class GameArea extends StatelessWidget {
                   child: ClipRRect(
                     borderRadius: borderRadius,
                     child: Container(
-                      color: AppTheme.boardColor.withOpacity(0.7),
+                      color: Color.fromRGBO(44, 44, 64, 0.7), // AppTheme.boardColor.withOpacity(0.7)
                       child: GameWidget(
                         game: game,
                         overlayBuilderMap: overlayBuilderMap,

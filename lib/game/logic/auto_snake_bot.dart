@@ -44,13 +44,11 @@ class AutoSnakeBot {
 
     // Flood fill para cada dirección segura
     int maxFree = -1;
-    Direction? bestDir;
     for (final dir in safeDirs) {
       final next = _nextPoint(head, dir);
       final free = _floodFillFree(next, Set.from(logic.snake));
       if (free > maxFree) {
         maxFree = free;
-        bestDir = dir;
       }
     }
 
