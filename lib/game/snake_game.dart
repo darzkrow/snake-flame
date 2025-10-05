@@ -308,25 +308,33 @@ class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
       return;
     }
     logic.snake.insert(0, newHead);
-    // Comer fruta especial (lluvia)
-  if (logic.extraFruits.isNotEmpty && newHead == logic.extraFruits.first.position) {
-      int scoreToAdd = 3;
+    // Comer cualquier fruta de la lluvia (extra o golden)
+    final extraIndex = logic.extraFruits.indexWhere((f) => newHead == f.position);
+    if (extraIndex != -1) {
+      int scoreToAdd = FruitScores.extra;
       if (isAccelerating && scoreManager.score > 0) {
         scoreManager.scoreNotifier.value -= 1;
       }
       scoreManager.increment(scoreToAdd);
       logic.applesEaten += 1;
-  logic.extraFruits.removeAt(0);
-  } else if (logic.goldenFruits.isNotEmpty && newHead == logic.goldenFruits.first.position) {
-      int scoreToAdd = 7;
+      logic.extraFruits.removeAt(extraIndex);
+      return;
+    }
+    final goldenIndex = logic.goldenFruits.indexWhere((f) => newHead == f.position);
+    if (goldenIndex != -1) {
+      print('GoldenFruit: newHead=$newHead, golden=${logic.goldenFruits[goldenIndex].position}');
+      int scoreToAdd = FruitScores.golden;
       if (isAccelerating && scoreManager.score > 0) {
         scoreManager.scoreNotifier.value -= 1;
       }
       scoreManager.increment(scoreToAdd);
       logic.applesEaten += 5;
-  logic.goldenFruits.removeAt(0);
-  } else if (newHead == logic.food.position) {
-      int scoreToAdd = 1;
+      print('GoldenFruit comida. Puntos sumados: $scoreToAdd, total: ${scoreManager.score}');
+      logic.goldenFruits.removeAt(goldenIndex);
+      return;
+    }
+    if (newHead == logic.food.position) {
+      int scoreToAdd = FruitScores.normal;
       if (isAccelerating && scoreManager.score > 0) {
         // Penalización: quemar 1 punto por moverse rápido
         scoreManager.scoreNotifier.value -= 1;
@@ -342,8 +350,8 @@ class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
       if (logic.applesEaten % 5 == 0) {
         logic.generateOrangeApple();
       }
-  } else if (logic.orangeApple != null && newHead == logic.orangeApple!.position) {
-      int scoreToAdd = 10;
+    } else if (logic.orangeApple != null && newHead == logic.orangeApple!.position) {
+      int scoreToAdd = FruitScores.orange;
       if (isAccelerating && scoreManager.score > 0) {
         scoreManager.scoreNotifier.value -= 1;
       }

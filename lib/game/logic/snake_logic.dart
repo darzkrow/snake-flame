@@ -1,3 +1,5 @@
+
+
 import 'dart:math';
 
 import '../food/normal_fruit.dart';
@@ -6,6 +8,14 @@ import '../food/special_fruit.dart';
 import '../food/extra_fruit.dart';
 import '../food/golden_fruit.dart';
 import '../food/bonus_food.dart';
+
+/// Puntajes centralizados para cada tipo de fruta
+class FruitScores {
+  static const int normal = 1;
+  static const int orange = 10;
+  static const int extra = 3;
+  static const int golden = 7;
+}
 
 enum Direction { up, down, left, right }
 

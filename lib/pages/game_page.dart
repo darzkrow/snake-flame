@@ -125,6 +125,7 @@ class _GamePageState extends State<GamePage> {
             ),
           ),
           // Controles responsivos SIEMPRE visibles abajo
+          
           Align(
             alignment: Alignment.bottomLeft,
             child: SafeArea(
