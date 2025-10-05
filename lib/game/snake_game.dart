@@ -1,4 +1,3 @@
-
 import 'dart:math';
 import 'package:flame/game.dart';
 import 'package:flame/input.dart';
@@ -8,8 +7,30 @@ import 'dart:ui';
 
 import 'score/score_manager.dart';
 import 'logic/snake_logic.dart';
+import 'logic/special_fruit.dart';
+import 'logic/auto_snake_bot.dart';
+import 'stage/stage_manager.dart';
 
 class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
+  bool autoPlay = false;
+  AutoSnakeBot? bot;
+  late StageManager stageManager;
+  int stage = 1;
+
+  void nextStage() {
+    stage++;
+    _applyStage();
+  }
+
+  void _applyStage() {
+    moveDelay = stageManager.getSpeedForStage(stage);
+    logic.setObstacles(stageManager.generatePatternForStage(stage));
+  }
+
+  // Eliminado: _generateObstacles, ahora usamos StageManager
+
+  @override
+  Color backgroundColor() => Colors.transparent;
   int rows = 20;
   int columns = 20;
   final ScoreManager scoreManager = ScoreManager();
@@ -41,6 +62,7 @@ class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
   void reset() {
     final startX = (columns / 2).floor();
     final startY = (rows / 2).floor();
+    stage = 1;
     logic = SnakeLogic(
       snake: [Point<int>(startX, startY)],
       direction: Direction.right,
@@ -49,12 +71,16 @@ class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
       rows: rows,
       columns: columns,
       food: Point<int>(5, 5),
+      obstacles: [],
     );
+    bot = AutoSnakeBot(logic: logic, columns: columns, rows: rows);
     moveTimer = 0.0;
     isGameOver = false;
     scoreManager.reset();
-    moveDelay = normalDelay;
     isAccelerating = false;
+    stageManager = StageManager(columns: columns, rows: rows);
+    moveDelay = stageManager.getSpeedForStage(stage);
+    logic.setObstacles(stageManager.generatePatternForStage(stage));
   }
 
   @override
@@ -71,10 +97,15 @@ class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
   }
 
   @override
+  @override
   KeyEventResult onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
     final result = super.onKeyEvent(event, keysPressed);
     if (event is KeyDownEvent) {
       final key = event.logicalKey;
+      if (key == LogicalKeyboardKey.keyB) {
+        autoPlay = !autoPlay;
+        return KeyEventResult.handled;
+      }
       if ((key == LogicalKeyboardKey.arrowUp || key == LogicalKeyboardKey.keyW)) {
         setDirection(Direction.up);
       } else if ((key == LogicalKeyboardKey.arrowDown || key == LogicalKeyboardKey.keyS)) {
@@ -98,12 +129,84 @@ class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
 
   @override
   void render(Canvas canvas) {
-    super.render(canvas);
+  super.render(canvas);
+  // Dibujar frutas extra (lluvia)
+    if (logic.extraFruits.isNotEmpty) {
+      final paintExtra = Paint()..color = Colors.lightGreenAccent;
+      for (final p in logic.extraFruits) {
+        canvas.drawRect(
+          Rect.fromLTWH(p.x * cellSize!, p.y * cellSize!, cellSize!, cellSize!),
+          paintExtra,
+        );
+      }
+    }
+    // Dibujar frutas doradas (lluvia)
+    if (logic.goldenFruits.isNotEmpty) {
+      final paintGold = Paint()..color = Colors.amberAccent;
+      for (final p in logic.goldenFruits) {
+        canvas.drawOval(
+          Rect.fromLTWH(p.x * cellSize!, p.y * cellSize!, cellSize!, cellSize!),
+          paintGold,
+        );
+      }
+    }
+    // Mostrar icono de efecto especial activo
+    if (logic.activeEffect != null && logic.specialEffectEnd != null && DateTime.now().isBefore(logic.specialEffectEnd!)) {
+      Color color = Colors.white;
+      String label = '';
+      switch (logic.activeEffect!) {
+        case SpecialEffectType.antiCollision:
+          color = Colors.blueAccent;
+          label = 'A';
+          break;
+        case SpecialEffectType.turbo:
+          color = Colors.purpleAccent;
+          label = 'T';
+          break;
+        case SpecialEffectType.doublePoints:
+          color = Colors.yellowAccent;
+          label = '2x';
+          break;
+        case SpecialEffectType.reverseControls:
+          color = Colors.redAccent;
+          label = 'R';
+          break;
+        case SpecialEffectType.magnet:
+          color = Colors.cyan;
+          label = 'M';
+          break;
+        case SpecialEffectType.fruitRain:
+          color = Colors.deepOrangeAccent;
+          label = 'F';
+          break;
+      }
+      final double iconSize = 32;
+      final Offset iconPos = Offset((columns * cellSize!) - iconSize - 8, 8);
+      canvas.drawCircle(iconPos + Offset(iconSize/2, iconSize/2), iconSize/2, Paint()..color = color.withOpacity(0.85));
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: label,
+          style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      textPainter.paint(canvas, iconPos + Offset((iconSize - textPainter.width)/2, (iconSize - textPainter.height)/2));
+    }
     if (cellSize == null) return;
     canvas.drawRect(
-      Rect.fromLTWH(0, 0, columns * cellSize!, rows * cellSize!),
-      Paint()..color = Colors.black,
+      Rect.fromLTWH(0, 0, columns * cellSize!, rows * cellSize!), 
+      Paint()..color = Colors.transparent,
     );
+    // Dibujar obstáculos
+    if (logic.obstacles.isNotEmpty) {
+      final paintObs = Paint()..color = Colors.brown;
+      for (final obs in logic.obstacles) {
+        canvas.drawRect(
+          Rect.fromLTWH(obs.x * cellSize!, obs.y * cellSize!, cellSize!, cellSize!),
+          paintObs,
+        );
+      }
+    }
     for (final p in logic.snake) {
       canvas.drawRect(
         Rect.fromLTWH(p.x * cellSize!, p.y * cellSize!, cellSize!, cellSize!),
@@ -120,6 +223,21 @@ class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
       canvas.drawRect(
         Rect.fromLTWH(logic.orangeApple!.x * cellSize!, logic.orangeApple!.y * cellSize!, cellSize!, cellSize!),
         Paint()..color = Colors.orange,
+      );
+    }
+    // Dibujar fruta especial
+    if (logic.specialFruit != null) {
+      final paintSpecial = Paint()
+        ..color = Colors.blueAccent.withOpacity(0.8)
+        ..style = PaintingStyle.fill;
+      canvas.drawOval(
+        Rect.fromLTWH(
+          logic.specialFruit!.position.x * cellSize!,
+          logic.specialFruit!.position.y * cellSize!,
+          cellSize!,
+          cellSize!,
+        ),
+        paintSpecial,
       );
     }
     if (isGameOver) {
@@ -139,8 +257,15 @@ class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
 
   @override
   void update(double dt) {
+    logic.updateMagnet();
     super.update(dt);
     if (isGameOver) return;
+    logic.maybeSpawnSpecialFruit();
+    logic.updateSpecialFruit();
+    if (autoPlay && bot != null) {
+      final dir = bot!.getNextDirection();
+      if (dir != null) setDirection(dir);
+    }
     moveTimer += dt;
     if (moveTimer >= moveDelay) {
       moveTimer = 0.0;
@@ -150,6 +275,7 @@ class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
 
   void _moveSnake() {
     final newHead = logic.getNextHead();
+    logic.eatSpecialFruitIfNeeded(newHead);
     if (logic.isCollision(newHead)) {
       isGameOver = true;
       if (onGameOverCallback != null) {
@@ -168,12 +294,15 @@ class SnakeGame extends FlameGame with HasKeyboardHandlerComponents {
       }
       scoreManager.increment(scoreToAdd);
       logic.applesEaten += 1;
+      // Subir de nivel cada 10 manzanas
+      if (logic.applesEaten % 10 == 0) {
+        nextStage();
+      }
       logic.generateFood();
       // Cada 5 manzanas, aparece una naranja
       if (logic.applesEaten % 5 == 0) {
         logic.generateOrangeApple();
       }
-    // Comer manzana naranja
     } else if (logic.orangeApple != null && newHead == logic.orangeApple) {
       int scoreToAdd = 10;
       if (isAccelerating && scoreManager.score > 0) {

@@ -52,6 +52,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/fonts/
+    - assets/board_bg.png
   fonts:
     - family: Bit32
       fonts:

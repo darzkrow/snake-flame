@@ -85,11 +85,7 @@ class _GamePageState extends State<GamePage> {
             left: 25,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.45),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.yellow.withOpacity(0.7), width: 2),
-              ),
+          
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -118,7 +114,7 @@ class _GamePageState extends State<GamePage> {
                         style: const TextStyle(
                           fontFamily: 'Bit32',
                           fontSize: 16,
-                          color: Colors.amber,
+                          color: AppTheme.overlayGray,
                           fontWeight: FontWeight.bold,
                         ),
                       );

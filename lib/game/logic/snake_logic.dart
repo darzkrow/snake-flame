@@ -1,8 +1,9 @@
 import 'dart:math';
-import '../food/normal_food.dart';
+import 'special_fruit.dart';
 import '../food/bonus_food.dart';
 
 enum Direction { up, down, left, right }
+
 
 class SnakeLogic {
   List<Point<int>> snake;
@@ -12,6 +13,12 @@ class SnakeLogic {
   int rows;
   int columns;
   Point<int> food;
+  List<Point<int>> obstacles;
+  SpecialFruit? specialFruit;
+  DateTime? specialEffectEnd;
+  SpecialEffectType? activeEffect;
+  List<Point<int>> extraFruits = [];
+  List<Point<int>> goldenFruits = [];
 
   SnakeLogic({
     required this.snake,
@@ -21,7 +28,130 @@ class SnakeLogic {
     required this.rows,
     required this.columns,
     required this.food,
+    this.obstacles = const [],
+    this.specialFruit,
+    this.specialEffectEnd,
+    this.activeEffect,
   });
+
+  bool get hasMagnet =>
+    activeEffect == SpecialEffectType.magnet && specialEffectEnd != null && DateTime.now().isBefore(specialEffectEnd!);
+
+  bool get hasFruitRain =>
+    activeEffect == SpecialEffectType.fruitRain && specialEffectEnd != null && DateTime.now().isBefore(specialEffectEnd!);
+
+  // Efecto imán: mueve la fruta hacia la cabeza y la come automáticamente si está al lado o encima
+  void updateMagnet() {
+    if (!hasMagnet || snake.isEmpty) return;
+    final head = snake.first;
+    int dx = food.x - head.x;
+    int dy = food.y - head.y;
+    if (dx.abs() + dy.abs() == 1) {
+      // Si la fruta está justo al lado, comer automáticamente
+      food = head;
+      applesEaten += 1;
+      generateFood();
+    } else if (food == head) {
+      applesEaten += 1;
+      generateFood();
+    } else if (dx.abs() + dy.abs() > 1) {
+      // Mover la fruta un paso hacia la cabeza
+      int stepX = dx == 0 ? 0 : (dx > 0 ? -1 : 1);
+      int stepY = dy == 0 ? 0 : (dy > 0 ? -1 : 1);
+      Point<int> newPos = Point(food.x + stepX, food.y + stepY);
+      if (!snake.contains(newPos) && !obstacles.contains(newPos)) {
+        food = newPos;
+      }
+    }
+  }
+  // Devuelve la siguiente posición de la cabeza según la dirección actual o una dirección dada
+  Point<int> getNextHead([Direction? dirOverride]) {
+    final head = snake.first;
+    final dir = dirOverride ?? direction;
+    switch (dir) {
+      case Direction.up:
+        return Point(head.x, head.y - 1);
+      case Direction.down:
+        return Point(head.x, head.y + 1);
+      case Direction.left:
+        return Point(head.x - 1, head.y);
+      case Direction.right:
+        return Point(head.x + 1, head.y);
+    }
+    throw Exception('Dirección inválida');
+  }
+
+  bool get hasAntiCollision =>
+    activeEffect == SpecialEffectType.antiCollision && specialEffectEnd != null && DateTime.now().isBefore(specialEffectEnd!);
+
+  bool get hasTurbo =>
+    activeEffect == SpecialEffectType.turbo && specialEffectEnd != null && DateTime.now().isBefore(specialEffectEnd!);
+
+  bool get hasDoublePoints =>
+    activeEffect == SpecialEffectType.doublePoints && specialEffectEnd != null && DateTime.now().isBefore(specialEffectEnd!);
+
+  bool get hasReverseControls =>
+    activeEffect == SpecialEffectType.reverseControls && specialEffectEnd != null && DateTime.now().isBefore(specialEffectEnd!);
+
+  void maybeSpawnSpecialFruit() {
+    if (specialFruit == null && Random().nextDouble() < 0.01) { // 1% chance per tick
+      Point<int> pos;
+      do {
+        pos = Point(Random().nextInt(columns), Random().nextInt(rows));
+      } while (snake.contains(pos) || obstacles.contains(pos) || pos == food || (orangeApple != null && pos == orangeApple));
+      // Elegir efecto aleatorio
+      final effects = SpecialEffectType.values;
+      final effect = effects[Random().nextInt(effects.length)];
+      specialFruit = SpecialFruit(
+        position: pos,
+        effectType: effect,
+        spawnTime: DateTime.now(),
+      );
+    }
+  }
+
+  void updateSpecialFruit() {
+    if (specialFruit != null && specialFruit!.isExpired(DateTime.now())) {
+      specialFruit = null;
+    }
+  }
+
+  void eatSpecialFruitIfNeeded(Point<int> head) {
+    if (specialFruit != null && head == specialFruit!.position) {
+      // Activar efecto especial
+      activeEffect = specialFruit!.effectType;
+      specialEffectEnd = DateTime.now().add(const Duration(seconds: 10));
+      // Efecto lluvia de frutas
+      if (activeEffect == SpecialEffectType.fruitRain) {
+        extraFruits.clear();
+        goldenFruits.clear();
+        final rand = Random();
+        if (rand.nextBool()) {
+          // 20 frutas normales
+          while (extraFruits.length < 20) {
+            final p = Point(rand.nextInt(columns), rand.nextInt(rows));
+            if (!snake.contains(p) && !obstacles.contains(p) && p != food && (orangeApple == null || p != orangeApple)) {
+              extraFruits.add(p);
+            }
+          }
+        } else {
+          // 5 doradas
+          while (goldenFruits.length < 5) {
+            final p = Point(rand.nextInt(columns), rand.nextInt(rows));
+            if (!snake.contains(p) && !obstacles.contains(p) && p != food && (orangeApple == null || p != orangeApple)) {
+              goldenFruits.add(p);
+            }
+          }
+        }
+      }
+      specialFruit = null;
+    }
+    // Limpiar frutas extra/doradas cuando termina el efecto
+    if (!hasFruitRain) {
+      extraFruits.clear();
+      goldenFruits.clear();
+    }
+  }
 
   void setDirection(Direction newDirection) {
     if ((direction == Direction.up && newDirection == Direction.down) ||
@@ -33,25 +163,28 @@ class SnakeLogic {
     direction = newDirection;
   }
 
-  Point<int> getNextHead() {
-    final head = snake.first;
-    switch (direction) {
-      case Direction.up:
-        return Point(head.x, head.y - 1);
-      case Direction.down:
-        return Point(head.x, head.y + 1);
-      case Direction.left:
-        return Point(head.x - 1, head.y);
-      case Direction.right:
-        return Point(head.x + 1, head.y);
+  bool isCollision(Point<int> newHead) {
+    if (hasAntiCollision) {
+      return newHead.x < 0 || newHead.x >= columns || newHead.y < 0 || newHead.y >= rows;
     }
+    return newHead.x < 0 || newHead.x >= columns || newHead.y < 0 || newHead.y >= rows || snake.contains(newHead) || obstacles.contains(newHead);
   }
 
-  bool isCollision(Point<int> newHead) {
-    return newHead.x < 0 || newHead.x >= columns || newHead.y < 0 || newHead.y >= rows || snake.contains(newHead);
+  void setObstacles(List<Point<int>> newObstacles) {
+    obstacles = newObstacles;
   }
 
   void grow() {
+    // Si come una fruta extra
+    if (extraFruits.isNotEmpty && getNextHead() == extraFruits.first) {
+      applesEaten += 1;
+      extraFruits.removeAt(0);
+    }
+    // Si come una dorada
+    if (goldenFruits.isNotEmpty && getNextHead() == goldenFruits.first) {
+      applesEaten += 5;
+      goldenFruits.removeAt(0);
+    }
     snake.insert(0, getNextHead());
   }
 
@@ -60,7 +193,16 @@ class SnakeLogic {
   }
 
   void generateFood() {
-    food = NormalFood.generate(columns, rows, snake, orangeApple: orangeApple);
+    food = _generateSafeFood();
+  }
+
+  Point<int> _generateSafeFood() {
+    final random = Random();
+    Point<int> pos;
+    do {
+      pos = Point(random.nextInt(columns), random.nextInt(rows));
+    } while (snake.contains(pos) || obstacles.contains(pos) || (orangeApple != null && pos == orangeApple));
+    return pos;
   }
 
   void generateOrangeApple() {
