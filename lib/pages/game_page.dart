@@ -64,7 +64,7 @@ class _GamePageState extends State<GamePage> {
             },
             initialActiveOverlays: const [],
           ),
-          // Puntaje flotante y botón de reinicio flotante dentro del área de juego
+          // Botón de reinicio en la esquina superior derecha
           Positioned(
             top: 25,
             right: 25,

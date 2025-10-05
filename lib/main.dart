@@ -41,8 +41,7 @@ class _SnakeAppState extends State<SnakeApp> {
   }
 
   void _onGameOver() {
-    // No cambiar 'started', solo mostrar overlay de Game Over
-    // El overlay se maneja desde SnakeGame y GamePage
+
   }
 
   @override
