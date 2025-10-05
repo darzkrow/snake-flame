@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../game/snake_game.dart';
 import '../widgets/game_area.dart';
+import '../ui/app_theme.dart';
 import 'game/game_over_overlay.dart';
 import 'game/game_controls.dart';
 
@@ -63,74 +64,68 @@ class _GamePageState extends State<GamePage> {
             },
             initialActiveOverlays: const [],
           ),
-          // Puntaje y botón de reinicio
-          SafeArea(
-            child: Stack(
-              children: [
-                Align(
-                  alignment: Alignment.topCenter,
-                  child: Container(
-                    margin: const EdgeInsets.only(top: 12),
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.purple.withOpacity(0.8),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.yellow, width: 3),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.star, color: Colors.yellow, size: 32),
-                        const SizedBox(width: 12),
-                        ValueListenableBuilder<int>(
-                          valueListenable: game.scoreManager.scoreNotifier,
-                          builder: (context, value, _) {
-                            return Text(
-                              '$value',
-                              style: const TextStyle(
-                                fontFamily: 'Bit32',
-                                fontSize: 40,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            );
-                          },
+          // Puntaje flotante y botón de reinicio flotante dentro del área de juego
+          Positioned(
+            top: 25,
+            right: 25,
+            child: Material(
+              color: AppTheme.overlayGray,
+              shape: const CircleBorder(),
+              elevation: 8,
+              child: IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.white, size: 28),
+                tooltip: 'Reiniciar',
+                onPressed: onRestart,
+                splashRadius: 28,
+              ),
+            ),
+          ),
+          Positioned(
+            top: 25,
+            left: 25,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.45),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.yellow.withOpacity(0.7), width: 2),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.star, color: Colors.yellow, size: 28),
+                  const SizedBox(width: 8),
+                  ValueListenableBuilder<int>(
+                    valueListenable: game.scoreManager.scoreNotifier,
+                    builder: (context, value, _) {
+                      return Text(
+                        '$value',
+                        style: const TextStyle(
+                          fontFamily: 'Bit32',
+                          fontSize: 28,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
                         ),
-                        const SizedBox(width: 24),
-                        ValueListenableBuilder<int>(
-                          valueListenable: game.scoreManager.bestScoreNotifier,
-                          builder: (context, best, _) {
-                            return Text(
-                              'Mejor: $best',
-                              style: const TextStyle(
-                                fontFamily: 'Bit32',
-                                fontSize: 20,
-                                color: Colors.amber,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            );
-                          },
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 16),
+                  ValueListenableBuilder<int>(
+                    valueListenable: game.scoreManager.bestScoreNotifier,
+                    builder: (context, best, _) {
+                      return Text(
+                        'Mejor: $best',
+                        style: const TextStyle(
+                          fontFamily: 'Bit32',
+                          fontSize: 16,
+                          color: Colors.amber,
+                          fontWeight: FontWeight.bold,
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
-                ),
-                Align(
-                  alignment: Alignment.topRight,
-                  child: Container(
-                    margin: const EdgeInsets.only(top: 16, right: 24),
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                      onPressed: onRestart,
-                      child: const Text('Reiniciar', style: TextStyle(fontSize: 20, color: Colors.white)),
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           // Controles responsivos SIEMPRE visibles abajo

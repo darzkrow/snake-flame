@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flame/game.dart';
 import '../game/snake_game.dart';
+import '../ui/app_theme.dart';
 
 class GameArea extends StatelessWidget {
   final SnakeGame game;
@@ -10,38 +11,61 @@ class GameArea extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final size = constraints.biggest;
-        // Si es horizontal, usar todo el ancho y centrar verticalmente
-        if (size.width > size.height) {
-          return Center(
-            child: SizedBox(
+    return Padding(
+      padding: AppTheme.screenPadding,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final borderRadius = BorderRadius.circular(AppTheme.cardRadius);
+          final size = constraints.biggest;
+          if (size.width > size.height) {
+            // Horizontal: usar todo el ancho y alto disponible
+            return Container(
               width: size.width,
               height: size.height,
-              child: GameWidget(
-                game: game,
-                overlayBuilderMap: overlayBuilderMap,
-                initialActiveOverlays: initialActiveOverlays,
+              decoration: BoxDecoration(
+                border: Border.all(color: AppTheme.gameOverPrimary, width: 4),
+                borderRadius: borderRadius,
               ),
-            ),
-          );
-        } else {
-          // Si es vertical, mantener cuadrado
-          final gameSize = size.width < size.height ? size.width : size.height;
-          return Center(
-            child: SizedBox(
-              width: gameSize,
-              height: gameSize,
-              child: GameWidget(
-                game: game,
-                overlayBuilderMap: overlayBuilderMap,
-                initialActiveOverlays: initialActiveOverlays,
+              child: ClipRRect(
+                borderRadius: borderRadius,
+                child: Container(
+                  color: AppTheme.boardColor,
+                  child: GameWidget(
+                    game: game,
+                    overlayBuilderMap: overlayBuilderMap,
+                    initialActiveOverlays: initialActiveOverlays,
+                  ),
+                ),
               ),
-            ),
-          );
-        }
-      },
+            );
+          } else {
+            // Vertical: cuadrado centrado
+            final minSide = size.width < size.height ? size.width : size.height;
+            return Align(
+              alignment: Alignment.center,
+              child: Container(
+                width: minSide,
+                height: minSide,
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppTheme.gameOverPrimary, width: 4),
+                  borderRadius: borderRadius,
+                ),
+                child: ClipRRect(
+                  borderRadius: borderRadius,
+                  child: Container(
+                    color: AppTheme.boardColor,
+                    child: GameWidget(
+                      game: game,
+                      overlayBuilderMap: overlayBuilderMap,
+                      initialActiveOverlays: initialActiveOverlays,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
+        },
+      ),
     );
   }
 }
